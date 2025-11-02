@@ -15,7 +15,6 @@ import {
   eachDayOfInterval,
   startOfYear,
   addMonths,
-  endOfMonth,
 } from "date-fns";
 
 export default function CalendarView({ viewMode }: { viewMode: "day" | "week" | "month" | "year" }) {
