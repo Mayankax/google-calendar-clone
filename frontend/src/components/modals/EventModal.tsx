@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -6,69 +6,85 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useEvents } from "../../context/EventContext";
 
-type EventModalProps = {
+export default function EventModal({
+  open,
+  onClose,
+  defaultDate,
+  refresh,
+}: {
   open: boolean;
   onClose: () => void;
-  defaultDate?: string; // for date clicked in calendar
-};
-
-export default function EventModal({ open, onClose, defaultDate }: EventModalProps) {
+  defaultDate?: string;
+  refresh?: () => void;
+}) {
   const { addEvent } = useEvents();
   const [title, setTitle] = useState("");
   const [date, setDate] = useState(defaultDate || "");
   const [time, setTime] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!title || !date) return;
+  // ✅ Update date state whenever defaultDate changes
+  useEffect(() => {
+    if (defaultDate) {
+      setDate(defaultDate);
+    }
+  }, [defaultDate]);
 
-    addEvent({
-      id: Date.now().toString(),
+  const handleSave = async () => {
+    if (!title.trim()) return;
+
+    await addEvent({
       title,
-      date,
-      time,
+      date: date || new Date().toISOString().split("T")[0],
+      description: time ? `Time: ${time}` : "",
     });
 
     setTitle("");
     setDate("");
     setTime("");
     onClose();
+    refresh && refresh();
   };
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Create Event</DialogTitle>
+          <DialogTitle>Add Event</DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="flex flex-col gap-3">
           <Input
             placeholder="Event title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            required
           />
-          <Input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            required
-          />
+
+          {/* Show date input only when not clicking a grid block */}
+          {!defaultDate && (
+            <Input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+            />
+          )}
+
           <Input
             type="time"
             value={time}
             onChange={(e) => setTime(e.target.value)}
           />
+        </div>
 
-          <DialogFooter>
-            <Button type="submit">Save</Button>
-          </DialogFooter>
-        </form>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button onClick={handleSave}>Save</Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
