@@ -123,51 +123,63 @@ export default function CalendarView({ viewMode }: { viewMode: "day" | "week" | 
           })}
         </div>
       ) : (
-        <div
-          className={`grid gap-2 ${
-            viewMode === "week"
-              ? "grid-cols-7"
-              : viewMode === "day"
-              ? "grid-cols-1"
-              : "grid-cols-7"
-          }`}
-        >
-          {days.map((day) => (
-            <div
-              key={day.toISOString()}
-              onClick={() => handleDayClick(day)}
-              className={`p-2 min-h-[100px] border rounded-md cursor-pointer
-                ${isSameDay(day, new Date()) ? "border-2 border-blue-600 bg-blue-50" : ""}
-                ${
-                  isSameMonth(day, currentDate)
-                    ? "bg-white hover:bg-blue-50"
-                    : "bg-gray-100 text-gray-400"
-                }`}
-            >
-              <div className="text-sm font-semibold">{format(day, "d")}</div>
-              <div className="mt-1 space-y-1">
-                {events
-                  .filter((e) => e.date === format(day, "yyyy-MM-dd"))
-                  .map((e) => (
-                    <div
-                      key={e._id}
-                      className="bg-blue-100 text-xs p-1 rounded flex justify-between items-center"
-                    >
-                      <span>{e.title}</span>
-                      <button
-                        onClick={(ev) => {
-                          ev.stopPropagation();
-                          handleDelete(e._id);
-                        }}
-                        className="text-red-500 font-bold ml-1"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))}
-              </div>
+        <div>
+          {/* ✅ Weekday Headers */}
+          {viewMode !== "day" && (
+            <div className="grid grid-cols-7 text-center font-medium text-gray-600 mb-2">
+              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+                <div key={day}>{day}</div>
+              ))}
             </div>
-          ))}
+          )}
+
+          {/* ✅ Main Calendar Grid */}
+          <div
+            className={`grid gap-2 ${
+              viewMode === "week"
+                ? "grid-cols-7"
+                : viewMode === "day"
+                ? "grid-cols-1"
+                : "grid-cols-7"
+            }`}
+          >
+            {days.map((day) => (
+              <div
+                key={day.toISOString()}
+                onClick={() => handleDayClick(day)}
+                className={`p-2 min-h-[100px] border rounded-md cursor-pointer
+                  ${isSameDay(day, new Date()) ? "border-2 border-blue-600 bg-blue-50" : ""}
+                  ${
+                    isSameMonth(day, currentDate)
+                      ? "bg-white hover:bg-blue-50"
+                      : "bg-gray-100 text-gray-400"
+                  }`}
+              >
+                <div className="text-sm font-semibold">{format(day, "d")}</div>
+                <div className="mt-1 space-y-1">
+                  {events
+                    .filter((e) => e.date === format(day, "yyyy-MM-dd"))
+                    .map((e) => (
+                      <div
+                        key={e._id}
+                        className="bg-blue-100 text-xs p-1 rounded flex justify-between items-center"
+                      >
+                        <span>{e.title}</span>
+                        <button
+                          onClick={(ev) => {
+                            ev.stopPropagation();
+                            handleDelete(e._id);
+                          }}
+                          className="text-red-500 font-bold ml-1"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
