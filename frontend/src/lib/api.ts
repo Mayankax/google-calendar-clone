@@ -21,3 +21,13 @@ export async function createEvent(event: {
 export async function deleteEvent(id: string) {
   await fetch(`${API_BASE}/${id}`, { method: "DELETE" });
 }
+
+export async function updateEvent(id: string, updates: { title?: string; date?: string; description?: string }) {
+  const res = await fetch(`${API_BASE}/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(updates),
+  });
+  return res.json();
+}
+

@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { fetchEvents, deleteEvent } from "@/lib/api";
 import {
   getMonthDays,
   getNextMonth,
@@ -16,22 +15,24 @@ import {
   startOfYear,
   addMonths,
 } from "date-fns";
+import { useEvents } from "@/context/EventContext"; // ✅ use global context
 
-export default function CalendarView({ viewMode }: { viewMode: "day" | "week" | "month" | "year" }) {
+export default function CalendarView({
+  viewMode,
+}: {
+  viewMode: "day" | "week" | "month" | "year";
+}) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [days, setDays] = useState<Date[]>([]);
-  const [events, setEvents] = useState<any[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
 
-  // Load events
-  const loadEvents = async () => {
-    const data = await fetchEvents();
-    setEvents(data);
-  };
+  // ✅ Use global context instead of local fetching
+  const { events } = useEvents();
 
+  // Generate visible days when view/date changes
   useEffect(() => {
-    loadEvents();
     updateDays();
   }, [currentDate, viewMode]);
 
@@ -44,10 +45,11 @@ export default function CalendarView({ viewMode }: { viewMode: "day" | "week" | 
     } else if (viewMode === "day") {
       setDays([currentDate]);
     } else if (viewMode === "year") {
-      setDays([]); // We'll handle year separately
+      setDays([]);
     }
   };
 
+  // ✅ Navigation handlers
   const handlePrev = () => {
     if (viewMode === "month") setCurrentDate(getPrevMonth(currentDate));
     else if (viewMode === "week") setCurrentDate(addDays(currentDate, -7));
@@ -62,14 +64,16 @@ export default function CalendarView({ viewMode }: { viewMode: "day" | "week" | 
     else if (viewMode === "year") setCurrentDate(addMonths(currentDate, 12));
   };
 
+  // ✅ Click handlers
   const handleDayClick = (day: Date) => {
+    setSelectedEvent(null);
     setSelectedDate(day);
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
-    await deleteEvent(id);
-    loadEvents();
+  const handleEventClick = (event: any) => {
+    setSelectedEvent(event);
+    setIsModalOpen(true);
   };
 
   return (
@@ -93,7 +97,7 @@ export default function CalendarView({ viewMode }: { viewMode: "day" | "week" | 
         </button>
       </div>
 
-      {/* Render Based on Mode */}
+      {/* Year Mode */}
       {viewMode === "year" ? (
         <div className="grid grid-cols-3 gap-4">
           {Array.from({ length: 12 }).map((_, i) => {
@@ -123,7 +127,7 @@ export default function CalendarView({ viewMode }: { viewMode: "day" | "week" | 
         </div>
       ) : (
         <div>
-          {/* ✅ Weekday Headers */}
+          {/* Weekday Headers */}
           {viewMode !== "day" && (
             <div className="grid grid-cols-7 text-center font-medium text-gray-600 mb-2">
               {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
@@ -132,7 +136,7 @@ export default function CalendarView({ viewMode }: { viewMode: "day" | "week" | 
             </div>
           )}
 
-          {/* ✅ Main Calendar Grid */}
+          {/* Main Calendar Grid */}
           <div
             className={`grid gap-2 ${
               viewMode === "week"
@@ -147,7 +151,11 @@ export default function CalendarView({ viewMode }: { viewMode: "day" | "week" | 
                 key={day.toISOString()}
                 onClick={() => handleDayClick(day)}
                 className={`p-2 min-h-[100px] border rounded-md cursor-pointer
-                  ${isSameDay(day, new Date()) ? "border-2 border-blue-600 bg-blue-50" : ""}
+                  ${
+                    isSameDay(day, new Date())
+                      ? "border-2 border-blue-600 bg-blue-50"
+                      : ""
+                  }
                   ${
                     isSameMonth(day, currentDate)
                       ? "bg-white hover:bg-blue-50"
@@ -161,18 +169,13 @@ export default function CalendarView({ viewMode }: { viewMode: "day" | "week" | 
                     .map((e) => (
                       <div
                         key={e._id}
-                        className="bg-blue-100 text-xs p-1 rounded flex justify-between items-center"
+                        onClick={(ev) => {
+                          ev.stopPropagation();
+                          handleEventClick(e);
+                        }}
+                        className="bg-blue-100 text-xs p-1 rounded cursor-pointer hover:bg-blue-200 transition"
                       >
-                        <span>{e.title}</span>
-                        <button
-                          onClick={(ev) => {
-                            ev.stopPropagation();
-                            handleDelete(e._id);
-                          }}
-                          className="text-red-500 font-bold ml-1"
-                        >
-                          ×
-                        </button>
+                        {e.title}
                       </div>
                     ))}
                 </div>
@@ -182,13 +185,18 @@ export default function CalendarView({ viewMode }: { viewMode: "day" | "week" | 
         </div>
       )}
 
+      {/* Unified Modal for Create / Edit */}
       <EventModal
         open={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedEvent(null);
+          setSelectedDate(null);
+        }}
         defaultDate={
           selectedDate ? format(selectedDate, "yyyy-MM-dd") : undefined
         }
-        refresh={loadEvents}
+        event={selectedEvent}
       />
     </div>
   );

@@ -31,3 +31,18 @@ export const deleteEvent = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Failed to delete event" });
   }
 };
+
+
+// ✅ PUT update event
+export const updateEvent = async (req: Request, res: Response) => {
+  try {
+    const updated = await Event.findByIdAndUpdate(req.params.id, req.body, {
+      new: true, // return updated document
+      runValidators: true,
+    });
+    if (!updated) return res.status(404).json({ message: "Event not found" });
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to update event" });
+  }
+};

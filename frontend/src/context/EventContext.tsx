@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { fetchEvents, createEvent, deleteEvent } from "../lib/api";
+import { fetchEvents, createEvent, deleteEvent, updateEvent } from "../lib/api";
 
 type Event = {
   _id?: string;
@@ -13,6 +13,7 @@ type EventContextType = {
   events: Event[];
   addEvent: (event: Omit<Event, "id">) => Promise<void>;
   removeEvent: (id: string) => Promise<void>;
+  editEvent: (id: string, updates: Partial<Event>) => Promise<void>;
 };
 
 const EventContext = createContext<EventContextType | undefined>(undefined);
@@ -38,8 +39,13 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
     setEvents((prev) => prev.filter((e) => e._id !== id && e.id !== id));
   };
 
+  const editEvent = async (id: string, updates: Partial<Event>) => {
+    const updated = await updateEvent(id, updates);
+    setEvents((prev) => prev.map((e) => (e._id === id ? updated : e)));
+  };
+
   return (
-    <EventContext.Provider value={{ events, addEvent, removeEvent }}>
+    <EventContext.Provider value={{ events, addEvent, removeEvent, editEvent }}>
       {children}
     </EventContext.Provider>
   );
